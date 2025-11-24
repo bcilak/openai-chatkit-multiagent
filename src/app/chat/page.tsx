@@ -1,28 +1,23 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 // @ts-ignore
 import { ChatKit, useChatKit } from "@openai/chatkit-react";
-import { ArrowLeft } from "lucide-react";
+import { Suspense } from "react";
 
-export default function ChatPage() {
-    const router = useRouter();
+function ChatContent() {
+    const searchParams = useSearchParams();
+    const workflowId = searchParams.get("workflow");
+    const siteId = searchParams.get("site");
 
     const { control } = useChatKit({
         api: {
             async getClientSecret(existing) {
-                const apiKey = localStorage.getItem("openai_api_key");
-                const workflowId = localStorage.getItem("openai_workflow_id");
-
-                if (!apiKey || !workflowId) {
-                    router.push("/");
-                    throw new Error("Missing credentials");
-                }
-
+                // Fetch token from our secure backend
                 const response = await fetch("/api/token", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ apiKey, workflowId }),
+                    body: JSON.stringify({ workflowId, siteId }),
                 });
 
                 if (!response.ok) {
@@ -36,30 +31,36 @@ export default function ChatPage() {
         },
     });
 
-    return (
-        <div className="flex h-screen flex-col bg-zinc-950">
-            <header className="flex h-14 items-center justify-between border-b border-white/5 bg-white/5 px-4 backdrop-blur-md">
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => router.push("/")}
-                        className="rounded-lg p-2 text-zinc-400 hover:bg-white/10 hover:text-white transition-colors"
-                    >
-                        <ArrowLeft className="h-5 w-5" />
-                    </button>
-                    <span className="font-medium text-white">Agent Workflow</span>
+    if (!workflowId && !siteId) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-zinc-950 text-white">
+                <div className="text-center">
+                    <h1 className="text-2xl font-bold mb-2">Configuration Error</h1>
+                    <p className="text-zinc-400">Missing workflow ID or Site ID.</p>
                 </div>
-                <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
-                    <span className="text-xs text-zinc-400">Connected</span>
-                </div>
-            </header>
+            </div>
+        );
+    }
 
-            <main className="flex-1 overflow-hidden relative">
-                <div className="h-full w-full [&_.chatkit-container]:h-full [&_.chatkit-container]:bg-transparent">
-                    {/* @ts-ignore */}
-                    <ChatKit control={control} className="h-full w-full" />
-                </div>
-            </main>
+    return (
+        <div className="flex h-screen w-full flex-col bg-zinc-950">
+            {/* @ts-ignore */}
+            <ChatKit
+                control={control}
+                className="h-full w-full"
+                theme={{
+                    backgroundColor: "#09090b", // zinc-950
+                    textColor: "#ffffff",
+                }}
+            />
         </div>
+    );
+}
+
+export default function ChatPage() {
+    return (
+        <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-zinc-950 text-white">Loading...</div>}>
+            <ChatContent />
+        </Suspense>
     );
 }
