@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatKit Embed Demo - Multi-Site Support</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .code-block {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 20px 0;
+        }
+
+        .code-block code {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .note {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .info {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🤖 ChatKit Multi-Agent Embed System</h1>
+        <p class="subtitle">Secure, server-side API key management with multi-site support</p>
+
+        <div class="success">
+            <strong>✅ Chat bubble is active on this page!</strong><br>
+            Look at the bottom-right corner to see it in action.
+        </div>
+
+        <h2>🔐 Güvenlik (Security)</h2>
+        <div class="info">
+            <strong>API Key artık güvende!</strong><br>
+            API key'iniz artık <code>.env.local</code> dosyasında sunucu tarafında saklanıyor.
+            Müşterileriniz API key'inizi göremez veya kullanamaz.
+        </div>
+
+        <h2>⚙️ Kurulum (Setup)</h2>
+
+        <h3>1. API Key'inizi Ekleyin</h3>
+        <p><code>.env.local</code> dosyasını açın ve API key'inizi girin:</p>
+        <div class="code-block">
+            <code>OPENAI_API_KEY=sk-proj-your-actual-api-key-here</code>
+        </div>
+
+        <h3>2. Workflow ID'lerinizi Tanımlayın</h3>
+        <p>Her site için farklı workflow ID'leri tanımlayın:</p>
+        <div class="code-block">
+            <code># Default workflow (fallback)
+WORKFLOW_DEFAULT=wf_6918f02b172c819094b6471f0d130ff307ea09a5fb18d58c
+
+# Site-specific workflows
+WORKFLOW_ECOMMERCE=wf_your_ecommerce_workflow_id
+WORKFLOW_SUPPORT=wf_your_support_workflow_id
+WORKFLOW_EDUCATION=wf_your_education_workflow_id</code>
+        </div>
+
+        <h2>🚀 Kullanım (Usage)</h2>
+
+        <h3>Yöntem 1: Site ID ile (Önerilen)</h3>
+        <p>Her site için benzersiz bir ID verin. Backend otomatik olarak doğru workflow'u seçer:</p>
+        <div class="code-block">
+            <code>&lt;script 
+    src="http://localhost:3000/embed.js"
+    data-site="ecommerce"
+    data-color="#10b981"
+    data-title="Shopping Assistant"
+&gt;&lt;/script&gt;</code>
+        </div>
+
+        <h3>Yöntem 2: Doğrudan Workflow ID ile</h3>
+        <p>Spesifik bir workflow ID kullanmak isterseniz:</p>
+        <div class="code-block">
+            <code>&lt;script 
+    src="http://localhost:3000/embed.js"
+    data-workflow="wf_specific_workflow_id"
+    data-color="#3b82f6"
+    data-title="Custom Agent"
+&gt;&lt;/script&gt;</code>
+        </div>
+
+        <h2>📋 Parametreler</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Parametre</th>
+                    <th>Açıklama</th>
+                    <th>Gerekli</th>
+                    <th>Varsayılan</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><code>data-site</code></td>
+                    <td>Site ID (backend'de tanımlı olmalı)</td>
+                    <td>Hayır*</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td><code>data-workflow</code></td>
+                    <td>Doğrudan workflow ID</td>
+                    <td>Hayır*</td>
+                    <td>-</td>
+                </tr>
+                <tr>
+                    <td><code>data-position</code></td>
+                    <td>"bottom-right" veya "bottom-left"</td>
+                    <td>Hayır</td>
+                    <td>bottom-right</td>
+                </tr>
+                <tr>
+                    <td><code>data-color</code></td>
+                    <td>Hex renk kodu</td>
+                    <td>Hayır</td>
+                    <td>#3b82f6</td>
+                </tr>
+                <tr>
+                    <td><code>data-title</code></td>
+                    <td>Chat başlığı</td>
+                    <td>Hayır</td>
+                    <td>Chat with us</td>
+                </tr>
+            </tbody>
+        </table>
+        <p><small>* <code>data-site</code> veya <code>data-workflow</code>'dan en az biri gerekli. İkisi de yoksa
+                <code>WORKFLOW_DEFAULT</code> kullanılır.</small></p>
+
+        <h2>🎨 Örnekler</h2>
+
+        <h3>E-ticaret Sitesi</h3>
+        <div class="code-block">
+            <code>&lt;script 
+    src="http://localhost:3000/embed.js"
+    data-site="ecommerce"
+    data-color="#10b981"
+    data-title="Alışveriş Asistanı"
+    data-position="bottom-right"
+&gt;&lt;/script&gt;</code>
+        </div>
+
+        <h3>Destek Sitesi</h3>
+        <div class="code-block">
+            <code>&lt;script 
+    src="http://localhost:3000/embed.js"
+    data-site="support"
+    data-color="#ef4444"
+    data-title="Destek Hattı"
+    data-position="bottom-left"
+&gt;&lt;/script&gt;</code>
+        </div>
+
+        <h3>Eğitim Platformu</h3>
+        <div class="code-block">
+            <code>&lt;script 
+    src="http://localhost:3000/embed.js"
+    data-site="education"
+    data-color="#8b5cf6"
+    data-title="Öğrenme Asistanı"
+&gt;&lt;/script&gt;</code>
+        </div>
+
+        <div class="note">
+            <strong>⚠️ Production'da:</strong>
+            <ul>
+                <li><code>localhost:3000</code> yerine kendi domain'inizi kullanın</li>
+                <li><code>.env.local</code> dosyasını Git'e eklemeyin (zaten .gitignore'da)</li>
+                <li>Sunucuyu yeniden başlatın: <code>npm run dev</code></li>
+            </ul>
+        </div>
+
+        <h2>🔄 Workflow Değiştirme</h2>
+        <p>Bir site için workflow değiştirmek isterseniz:</p>
+        <ol>
+            <li><code>.env.local</code> dosyasını açın</li>
+            <li>İlgili <code>WORKFLOW_*</code> değişkenini güncelleyin</li>
+            <li>Sunucuyu yeniden başlatın</li>
+        </ol>
+        <p>Müşterileriniz hiçbir değişiklik yapmak zorunda kalmaz!</p>
+    </div>
+
+    <!-- Embed the chat bubble on this demo page -->
+    <script src="http://localhost:3000/embed.js" data-site="Köklü" data-color="#09530a" data-title="Chat with us"
+        data-position="bottom-right"></script>
+</body>
+
+</html>
