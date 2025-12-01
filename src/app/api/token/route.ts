@@ -58,6 +58,8 @@ export async function POST(request: Request) {
     console.log("Creating session with:", {
       siteId,
       workflowId: finalWorkflowId,
+      hasApiKey: !!apiKey,
+      apiKeyLength: apiKey?.length,
     });
 
     const response = await fetch("https://api.openai.com/v1/chatkit/sessions", {
@@ -65,7 +67,6 @@ export async function POST(request: Request) {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
-        "OpenAI-Beta": "chatkit_beta=v1",
       },
       body: JSON.stringify({
         workflow: { id: finalWorkflowId },
