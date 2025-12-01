@@ -93,8 +93,8 @@ function ChatBubbleInner({
 
                     {/* Chat Content */}
                     {!isMinimized && (
-                        <div className="flex-1 overflow-hidden">
-                            <ChatKit control={control} className="h-full w-full" />
+                        <div className="flex-1 overflow-hidden" style={{ minHeight: "400px" }}>
+                            <ChatKit control={control} style={{ height: "100%", width: "100%" }} />
                         </div>
                     )}
                 </div>
