@@ -16,11 +16,13 @@
     // Create iframe
     const iframe = document.createElement('iframe');
     iframe.style.position = 'fixed';
-    iframe.style.bottom = '0';
-    iframe.style.right = position === 'bottom-right' ? '0' : 'auto';
-    iframe.style.left = position === 'bottom-left' ? '0' : 'auto';
-    iframe.style.width = '100%';
-    iframe.style.height = '100%';
+    iframe.style.bottom = '20px';
+    iframe.style.right = position === 'bottom-right' ? '20px' : 'auto';
+    iframe.style.left = position === 'bottom-left' ? '20px' : 'auto';
+    iframe.style.width = '400px';
+    iframe.style.maxWidth = 'calc(100vw - 40px)';
+    iframe.style.height = '600px';
+    iframe.style.maxHeight = 'calc(100vh - 40px)';
     iframe.style.border = 'none';
     iframe.style.zIndex = '999999';
     iframe.style.pointerEvents = 'none';
