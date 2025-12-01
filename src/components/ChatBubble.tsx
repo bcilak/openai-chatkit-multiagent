@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { MessageCircle, X, Minimize2 } from "lucide-react";
-import { ChatKit, useChatKit } from "@openai/chatkit-react";
+import { ChatKit, ChatKitProvider, useChatKit } from "@openai/chatkit-react";
 
 interface ChatBubbleProps {
     workflowId?: string;
@@ -12,16 +12,24 @@ interface ChatBubbleProps {
     title?: string;
 }
 
-export default function ChatBubble({
-    workflowId,
-    siteId,
+// Inner component that uses the hook (must be inside ChatKitProvider)
+function ChatBubbleInner({
     position = "bottom-right",
     primaryColor = "#3b82f6",
     title = "Chat with us",
-}: ChatBubbleProps) {
-    const [isOpen, setIsOpen] = useState(false);
-    const [isMinimized, setIsMinimized] = useState(false);
-
+    isOpen,
+    setIsOpen,
+    isMinimized,
+    setIsMinimized,
+}: {
+    position?: "bottom-right" | "bottom-left";
+    primaryColor?: string;
+    title?: string;
+    isOpen: boolean;
+    setIsOpen: (open: boolean) => void;
+    isMinimized: boolean;
+    setIsMinimized: (min: boolean) => void;
+}) {
     // Notify parent window about open/close state for iframe resizing
     useEffect(() => {
         if (window.parent !== window) {
@@ -32,25 +40,7 @@ export default function ChatBubble({
         }
     }, [isOpen]);
 
-    const { control } = useChatKit({
-        api: {
-            async getClientSecret() {
-                const response = await fetch("/api/token", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ workflowId, siteId }),
-                });
-
-                if (!response.ok) {
-                    const data = await response.json();
-                    throw new Error(data.error || "Failed to authenticate");
-                }
-
-                const data = await response.json();
-                return data.client_secret;
-            },
-        },
-    });
+    const { control } = useChatKit();
 
     const positionClass = position === "bottom-left" ? "left-0" : "right-0";
 
@@ -110,5 +100,48 @@ export default function ChatBubble({
                 </div>
             )}
         </div>
+    );
+}
+
+export default function ChatBubble({
+    workflowId,
+    siteId,
+    position = "bottom-right",
+    primaryColor = "#3b82f6",
+    title = "Chat with us",
+}: ChatBubbleProps) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [isMinimized, setIsMinimized] = useState(false);
+
+    const apiConfig = {
+        async getClientSecret() {
+            const response = await fetch("/api/token", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ workflowId, siteId }),
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || "Failed to authenticate");
+            }
+
+            const data = await response.json();
+            return data.client_secret;
+        },
+    };
+
+    return (
+        <ChatKitProvider api={apiConfig}>
+            <ChatBubbleInner
+                position={position}
+                primaryColor={primaryColor}
+                title={title}
+                isOpen={isOpen}
+                setIsOpen={setIsOpen}
+                isMinimized={isMinimized}
+                setIsMinimized={setIsMinimized}
+            />
+        </ChatKitProvider>
     );
 }
