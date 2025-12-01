@@ -12,6 +12,19 @@ function EmbedContent() {
     const color = searchParams.get("color") || "#3b82f6";
     const title = searchParams.get("title") || "Chat with us";
 
+    // Polyfill for crypto.randomUUID (needed for older browsers/non-HTTPS)
+    useEffect(() => {
+        if (typeof crypto !== 'undefined' && !crypto.randomUUID) {
+            (crypto as Crypto & { randomUUID: () => string }).randomUUID = function() {
+                return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                    const r = Math.random() * 16 | 0;
+                    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                    return v.toString(16);
+                });
+            };
+        }
+    }, []);
+
     // Make background transparent for embed
     useEffect(() => {
         document.documentElement.classList.add("embed-html");

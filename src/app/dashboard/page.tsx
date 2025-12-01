@@ -225,7 +225,9 @@ export default function DashboardPage() {
     }
 
     function getEmbedCode(bot: BotConfig) {
-        const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
+        // Use NEXT_PUBLIC_SITE_URL or production URL, fallback to current origin
+        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 
+            (typeof window !== "undefined" ? window.location.origin : "");
         return `<script 
     src="${baseUrl}/embed.js"
     data-site="${bot.siteId}"
