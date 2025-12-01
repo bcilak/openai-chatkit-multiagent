@@ -48,10 +48,6 @@ function ChatContent() {
             <ChatKit
                 control={control}
                 className="h-full w-full"
-                theme={{
-                    backgroundColor: "#09090b", // zinc-950
-                    textColor: "#ffffff",
-                }}
             />
         </div>
     );
