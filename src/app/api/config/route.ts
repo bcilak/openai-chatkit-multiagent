@@ -1,61 +1,109 @@
 import { NextResponse } from "next/server";
-import fs from "fs";
-import path from "path";
+import { getConfig, saveConfig } from "@/lib/db";
 
-const configPath = path.join(process.cwd(), "data", "config.json");
+// Simple rate limiting
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT = 30; // requests per minute
+const RATE_WINDOW = 60 * 1000; // 1 minute
 
-// Ensure data directory exists
-function ensureDataDir() {
-    const dataDir = path.join(process.cwd(), "data");
-    if (!fs.existsSync(dataDir)) {
-        fs.mkdirSync(dataDir, { recursive: true });
+function checkRateLimit(ip: string): boolean {
+    const now = Date.now();
+    const record = rateLimitMap.get(ip);
+
+    if (!record || now > record.resetTime) {
+        rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_WINDOW });
+        return true;
     }
-    if (!fs.existsSync(configPath)) {
-        fs.writeFileSync(configPath, JSON.stringify({ apiKey: "", bots: [] }, null, 2));
+
+    if (record.count >= RATE_LIMIT) {
+        return false;
     }
+
+    record.count++;
+    return true;
 }
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
-        ensureDataDir();
-        const data = fs.readFileSync(configPath, "utf-8");
-        const config = JSON.parse(data);
+        const config = await getConfig();
 
         // Don't expose full API key, just show if it exists
         return NextResponse.json({
             hasApiKey: !!config.apiKey,
             apiKeyPreview: config.apiKey ? `${config.apiKey.substring(0, 10)}...` : "",
-            bots: config.bots || [],
+            bots: config.bots.map((bot) => ({
+                ...bot,
+                apiKey: bot.apiKey ? "***configured***" : "",
+            })),
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error reading config:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const message = error instanceof Error ? error.message : "Unknown error";
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }
 
 export async function POST(request: Request) {
     try {
-        ensureDataDir();
+        // Rate limiting
+        const ip = request.headers.get("x-forwarded-for") || "unknown";
+        if (!checkRateLimit(ip)) {
+            return NextResponse.json(
+                { error: "Too many requests. Please try again later." },
+                { status: 429 }
+            );
+        }
+
+        // Check auth for dashboard access
+        const authHeader = request.headers.get("authorization");
+        const dashboardPassword = process.env.DASHBOARD_PASSWORD;
+
+        if (dashboardPassword && authHeader !== `Bearer ${dashboardPassword}`) {
+            return NextResponse.json(
+                { error: "Unauthorized. Please login first." },
+                { status: 401 }
+            );
+        }
+
         const body = await request.json();
 
-        // Read current config
-        const data = fs.readFileSync(configPath, "utf-8");
-        const config = JSON.parse(data);
+        // Validate input
+        if (body.apiKey !== undefined && typeof body.apiKey !== "string") {
+            return NextResponse.json(
+                { error: "Invalid API key format" },
+                { status: 400 }
+            );
+        }
 
-        // Update config
+        if (body.bots !== undefined && !Array.isArray(body.bots)) {
+            return NextResponse.json(
+                { error: "Invalid bots format" },
+                { status: 400 }
+            );
+        }
+
+        const updateData: { apiKey?: string; bots?: typeof body.bots } = {};
+
         if (body.apiKey !== undefined) {
-            config.apiKey = body.apiKey;
+            updateData.apiKey = body.apiKey;
         }
         if (body.bots !== undefined) {
-            config.bots = body.bots;
+            updateData.bots = body.bots;
         }
 
-        // Write back
-        fs.writeFileSync(configPath, JSON.stringify(config, null, 2));
+        const success = await saveConfig(updateData);
+
+        if (!success) {
+            return NextResponse.json(
+                { error: "Failed to save configuration" },
+                { status: 500 }
+            );
+        }
 
         return NextResponse.json({ success: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Error updating config:", error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const message = error instanceof Error ? error.message : "Unknown error";
+        return NextResponse.json({ error: message }, { status: 500 });
     }
 }

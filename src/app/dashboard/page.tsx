@@ -1,13 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Plus, Trash2, Copy, Check, Settings, Bot } from "lucide-react";
+import { Plus, Trash2, Copy, Check, Settings, Bot, LogOut, Lock } from "lucide-react";
 
-interface Bot {
+interface BotConfig {
     id: string;
     name: string;
     siteId: string;
     workflowId: string;
+    apiKey?: string;
     color: string;
     title: string;
     position: "bottom-right" | "bottom-left";
@@ -16,9 +17,17 @@ interface Bot {
 export default function DashboardPage() {
     const [apiKey, setApiKey] = useState("");
     const [hasApiKey, setHasApiKey] = useState(false);
-    const [bots, setBots] = useState<Bot[]>([]);
+    const [bots, setBots] = useState<BotConfig[]>([]);
     const [showApiKeyInput, setShowApiKeyInput] = useState(false);
     const [copiedId, setCopiedId] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Auth state
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [requiresAuth, setRequiresAuth] = useState(false);
+    const [password, setPassword] = useState("");
+    const [authPassword, setAuthPassword] = useState<string | null>(null);
+    const [authError, setAuthError] = useState("");
 
     // New bot form
     const [newBot, setNewBot] = useState({
@@ -32,25 +41,108 @@ export default function DashboardPage() {
     });
 
     useEffect(() => {
-        loadConfig();
+        checkAuth();
     }, []);
 
-    async function loadConfig() {
+    async function checkAuth() {
         try {
-            const res = await fetch("/api/config");
+            // Check if auth is required
+            const authRes = await fetch("/api/auth/verify");
+            const authData = await authRes.json();
+            setRequiresAuth(authData.requiresAuth);
+
+            if (!authData.requiresAuth) {
+                setIsAuthenticated(true);
+                loadConfig();
+                return;
+            }
+
+            // Check saved password
+            const savedPassword = localStorage.getItem("dashboard_password");
+            if (savedPassword) {
+                const verifyRes = await fetch("/api/auth/verify", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ password: savedPassword }),
+                });
+
+                if (verifyRes.ok) {
+                    setAuthPassword(savedPassword);
+                    setIsAuthenticated(true);
+                    loadConfig(savedPassword);
+                    return;
+                } else {
+                    localStorage.removeItem("dashboard_password");
+                }
+            }
+
+            setIsLoading(false);
+        } catch (error) {
+            console.error("Auth check error:", error);
+            setIsLoading(false);
+        }
+    }
+
+    async function handleLogin() {
+        try {
+            setAuthError("");
+            const res = await fetch("/api/auth/verify", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ password }),
+            });
+
+            if (res.ok) {
+                localStorage.setItem("dashboard_password", password);
+                setAuthPassword(password);
+                setIsAuthenticated(true);
+                loadConfig(password);
+            } else {
+                setAuthError("Invalid password");
+            }
+        } catch (error) {
+            setAuthError("Authentication failed");
+        }
+    }
+
+    function handleLogout() {
+        localStorage.removeItem("dashboard_password");
+        setIsAuthenticated(false);
+        setAuthPassword(null);
+        setPassword("");
+    }
+
+    async function loadConfig(pwd?: string) {
+        try {
+            setIsLoading(true);
+            const headers: Record<string, string> = {};
+            if (pwd || authPassword) {
+                headers["Authorization"] = `Bearer ${pwd || authPassword}`;
+            }
+
+            const res = await fetch("/api/config", { headers });
             const data = await res.json();
             setHasApiKey(data.hasApiKey);
             setBots(data.bots || []);
         } catch (error) {
             console.error("Error loading config:", error);
+        } finally {
+            setIsLoading(false);
         }
     }
 
     async function saveApiKey() {
         try {
+            const headers: Record<string, string> = {
+                "Content-Type": "application/json",
+            };
+            if (authPassword) {
+                headers["Authorization"] = `Bearer ${authPassword}`;
+            }
+
             await fetch("/api/config", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers,
                 body: JSON.stringify({ apiKey }),
             });
             setHasApiKey(true);
@@ -69,7 +161,7 @@ export default function DashboardPage() {
             return;
         }
 
-        const bot: Bot = {
+        const bot: BotConfig = {
             id: Date.now().toString(),
             ...newBot,
         };
@@ -78,9 +170,16 @@ export default function DashboardPage() {
         setBots(updatedBots);
 
         try {
+            const headers: Record<string, string> = {
+                "Content-Type": "application/json",
+            };
+            if (authPassword) {
+                headers["Authorization"] = `Bearer ${authPassword}`;
+            }
+
             await fetch("/api/config", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers,
                 body: JSON.stringify({ bots: updatedBots }),
             });
 
@@ -107,9 +206,16 @@ export default function DashboardPage() {
         setBots(updatedBots);
 
         try {
+            const headers: Record<string, string> = {
+                "Content-Type": "application/json",
+            };
+            if (authPassword) {
+                headers["Authorization"] = `Bearer ${authPassword}`;
+            }
+
             await fetch("/api/config", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers,
                 body: JSON.stringify({ bots: updatedBots }),
             });
         } catch (error) {
@@ -118,8 +224,8 @@ export default function DashboardPage() {
         }
     }
 
-    function getEmbedCode(bot: Bot) {
-        const baseUrl = window.location.origin;
+    function getEmbedCode(bot: BotConfig) {
+        const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
         return `<script 
     src="${baseUrl}/embed.js"
     data-site="${bot.siteId}"
@@ -129,21 +235,77 @@ export default function DashboardPage() {
 ></script>`;
     }
 
-    function copyEmbedCode(bot: Bot) {
+    function copyEmbedCode(bot: BotConfig) {
         navigator.clipboard.writeText(getEmbedCode(bot));
         setCopiedId(bot.id);
         setTimeout(() => setCopiedId(null), 2000);
+    }
+
+    // Loading state
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 flex items-center justify-center">
+                <div className="text-white text-xl">Loading...</div>
+            </div>
+        );
+    }
+
+    // Login form
+    if (requiresAuth && !isAuthenticated) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 flex items-center justify-center p-4">
+                <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-8 border border-white/10 w-full max-w-md">
+                    <div className="flex items-center justify-center gap-3 mb-6">
+                        <Lock className="h-8 w-8 text-blue-400" />
+                        <h1 className="text-2xl font-bold text-white">Dashboard Login</h1>
+                    </div>
+
+                    <div className="space-y-4">
+                        <input
+                            type="password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            onKeyDown={(e) => e.key === "Enter" && handleLogin()}
+                            placeholder="Enter password"
+                            className="w-full bg-black/20 border border-white/10 rounded-lg px-4 py-3 text-white placeholder:text-zinc-600 focus:border-blue-500/50 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        />
+
+                        {authError && (
+                            <p className="text-red-400 text-sm">{authError}</p>
+                        )}
+
+                        <button
+                            onClick={handleLogin}
+                            className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold text-white transition-colors"
+                        >
+                            Login
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-zinc-900 via-zinc-800 to-zinc-900 text-white p-8">
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
-                <div className="mb-8">
-                    <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                        ChatKit Dashboard
-                    </h1>
-                    <p className="text-zinc-400">Manage your AI chat bots</p>
+                <div className="mb-8 flex items-center justify-between">
+                    <div>
+                        <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                            ChatKit Dashboard
+                        </h1>
+                        <p className="text-zinc-400">Manage your AI chat bots</p>
+                    </div>
+                    {requiresAuth && (
+                        <button
+                            onClick={handleLogout}
+                            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors text-zinc-300"
+                        >
+                            <LogOut className="h-4 w-4" />
+                            Logout
+                        </button>
+                    )}
                 </div>
 
                 {/* API Key Section */}

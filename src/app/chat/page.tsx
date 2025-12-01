@@ -1,7 +1,6 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-// @ts-ignore
 import { ChatKit, useChatKit } from "@openai/chatkit-react";
 import { Suspense } from "react";
 
@@ -44,7 +43,6 @@ function ChatContent() {
 
     return (
         <div className="flex h-screen w-full flex-col bg-zinc-950">
-            {/* @ts-ignore */}
             <ChatKit
                 control={control}
                 className="h-full w-full"

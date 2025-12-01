@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { MessageCircle, X, Minimize2 } from "lucide-react";
-// @ts-ignore
 import { ChatKit, useChatKit } from "@openai/chatkit-react";
 
 interface ChatBubbleProps {
@@ -98,7 +97,6 @@ export default function ChatBubble({
                     {/* Chat Content */}
                     {!isMinimized && (
                         <div className="flex-1 overflow-hidden">
-                            {/* @ts-ignore */}
                             <ChatKit control={control} className="h-full w-full" />
                         </div>
                     )}
