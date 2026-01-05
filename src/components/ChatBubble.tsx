@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { MessageCircle, X, Minimize2 } from "lucide-react";
-import { ChatKit, ChatKitProvider, useChatKit } from "@openai/chatkit-react";
+import { ChatKit, useChatKit } from "@openai/chatkit-react";
 
 interface ChatBubbleProps {
     workflowId?: string;
@@ -21,6 +21,7 @@ function ChatBubbleInner({
     setIsOpen,
     isMinimized,
     setIsMinimized,
+    apiConfig,
 }: {
     position?: "bottom-right" | "bottom-left";
     primaryColor?: string;
@@ -29,6 +30,7 @@ function ChatBubbleInner({
     setIsOpen: (open: boolean) => void;
     isMinimized: boolean;
     setIsMinimized: (min: boolean) => void;
+    apiConfig: any;
 }) {
     // Notify parent window about open/close state for iframe resizing
     useEffect(() => {
@@ -40,7 +42,7 @@ function ChatBubbleInner({
         }
     }, [isOpen]);
 
-    const { control } = useChatKit();
+    const { control } = useChatKit(apiConfig);
 
     const positionClass = position === "bottom-left" ? "left-0" : "right-0";
 
@@ -93,8 +95,8 @@ function ChatBubbleInner({
 
                     {/* Chat Content */}
                     {!isMinimized && (
-                        <div className="flex-1 overflow-hidden" style={{ minHeight: "400px" }}>
-                            <ChatKit control={control} style={{ height: "100%", width: "100%" }} />
+                        <div className="flex-1 overflow-hidden" style={{ minHeight: "400px", height: "100%", width: "100%" }}>
+                            <ChatKit control={control} />
                         </div>
                     )}
                 </div>
@@ -131,17 +133,17 @@ export default function ChatBubble({
         },
     };
 
+    // ChatKitProvider kaldırıldı, ChatKit doğrudan kullanılacak şekilde güncellendi
     return (
-        <ChatKitProvider api={apiConfig}>
-            <ChatBubbleInner
-                position={position}
-                primaryColor={primaryColor}
-                title={title}
-                isOpen={isOpen}
-                setIsOpen={setIsOpen}
-                isMinimized={isMinimized}
-                setIsMinimized={setIsMinimized}
-            />
-        </ChatKitProvider>
+        <ChatBubbleInner
+            position={position}
+            primaryColor={primaryColor}
+            title={title}
+            isOpen={isOpen}
+            setIsOpen={setIsOpen}
+            isMinimized={isMinimized}
+            setIsMinimized={setIsMinimized}
+            apiConfig={apiConfig}
+        />
     );
 }

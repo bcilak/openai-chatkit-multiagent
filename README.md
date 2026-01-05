@@ -6,57 +6,61 @@ A powerful dashboard for managing and deploying AI chat bots powered by OpenAI C
 
 - 🤖 **Multi-Bot Management**: Create and manage multiple chat bots from a single dashboard
 - 🎨 **Customizable Widgets**: Configure colors, positions, and titles for each bot
-- 🔐 **Secure API Key Management**: Store API keys securely with password protection
+- 🔐 **AES-256-GCM Encryption**: All API keys stored with military-grade encryption
+- 🗄️ **SQLite Database**: Lightweight, file-based storage with WAL mode
 - 📦 **Easy Embedding**: Simple script tag to embed chat on any website
-- ⚡ **Rate Limiting**: Built-in protection against API abuse
+- ⚡ **Rate Limiting**: Built-in protection against API abuse (20-30 req/min)
 - 🌐 **CORS Support**: Works seamlessly with cross-origin websites
+- 🔒 **Dashboard Protection**: Password-protected admin panel
+- 💾 **Auto Backup**: Automated daily backup with 30-day retention
 
-## 🚀 Deploy to Vercel
+## 🚀 Quick Start
 
-### Prerequisites
+### ⚡ 5-Minute Deployment (Virtualmin/VPS)
 
-1. An OpenAI account with API access
-2. A Vercel account
-3. OpenAI ChatKit workflow IDs
+```bash
+# 1. Upload files to server
+cd /home/youruser/domains/yourdomain.com/public_html
 
-### Quick Deploy
+# 2. Setup environment
+cp .env.production.example .env.local
+nano .env.local  # Set DASHBOARD_PASSWORD and ENCRYPTION_KEY
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/bcilak/openai-chatkit-multiagent)
+# 3. Deploy!
+chmod +x deploy-virtualmin.sh
+./deploy-virtualmin.sh
+```
 
-### Manual Deployment
+📘 **Full Guide:** [PRODUCTION-DEPLOY.md](PRODUCTION-DEPLOY.md)
+⚡ **Quick Start:** [QUICK-START.md](QUICK-START.md)
+✅ **Checklist:** [DEPLOYMENT-CHECKLIST.md](DEPLOYMENT-CHECKLIST.md)
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/bcilak/openai-chatkit-multiagent.git
-   cd openai-chatkit-multiagent
-   ```
+### 📦 Alternative: Deploy to Vercel
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/chatkit-dashboard)
 
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env.local
-   ```
-   Edit `.env.local` with your values:
-   - `OPENAI_API_KEY`: Your OpenAI API key
-   - `DASHBOARD_PASSWORD`: Password to protect the dashboard (optional but recommended)
+**Note:** Vercel deployment requires Vercel Postgres or similar database service.
 
-4. **Deploy to Vercel**
-   ```bash
-   npx vercel
-   ```
 
-5. **Add Vercel KV (Required for production)**
-   - Go to your Vercel dashboard
-   - Navigate to your project → Storage → Create Database → KV
-   - The environment variables will be automatically added
+## 🗄️ Database
 
-6. **Set Environment Variables in Vercel**
-   - Go to Project Settings → Environment Variables
-   - Add `OPENAI_API_KEY` and `DASHBOARD_PASSWORD`
+This project uses **SQLite** for data storage with AES-256-GCM encryption for API keys. The database file is automatically created at `data/chatkit.db` on first run. No external database server required!
+
+## ⚙️ Environment Variables
+
+Copy `.env.example` to `.env.local` and fill in your values:
+
+```
+OPENAI_API_KEY=sk-proj-your-api-key-here
+DASHBOARD_PASSWORD=your-secure-password-here
+ENCRYPTION_KEY=your-random-32-char-encryption-key
+```
+
+**Important Security Notes:**
+- `DASHBOARD_PASSWORD`: Protects admin panel access (required)
+- `ENCRYPTION_KEY`: Encrypts API keys in database (required, min 32 chars)
+- Generate secure encryption key: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`
+- All data is stored in SQLite database at `data/chatkit.db`
 
 ## 💻 Local Development
 
@@ -70,7 +74,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) to access the dashboard.
 
-> **Note**: In local development without Vercel KV, the app uses in-memory storage which resets on restart.
+> **Note**: All data is stored in `data/chatkit.db`. Backup this file regularly for production use.
 
 ## 📖 Usage
 
@@ -109,19 +113,19 @@ Copy the embed code and paste it before the closing `</body>` tag:
 
 ## 🔒 Security
 
-- API keys are stored securely in Vercel KV
-- Dashboard access can be protected with a password
-- Rate limiting prevents API abuse
+- **AES-256-GCM encryption** for all API keys in database
+- Dashboard password protection (required)
+- Rate limiting prevents API abuse (20-30 req/min per IP)
 - Bot-specific API keys allow granular access control
+- SQLite database file permissions should be 600 (owner read/write only)
 
 ## 🛠️ Environment Variables
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `OPENAI_API_KEY` | Yes | Default OpenAI API key |
-| `DASHBOARD_PASSWORD` | No | Password to protect dashboard access |
-| `KV_REST_API_URL` | Auto | Vercel KV URL (auto-configured) |
-| `KV_REST_API_TOKEN` | Auto | Vercel KV token (auto-configured) |
+| `OPENAI_API_KEY` | Optional | Default OpenAI API key (can be set in dashboard) |
+| `DASHBOARD_PASSWORD` | **Required** | Password to protect dashboard access |
+| `ENCRYPTION_KEY` | **Required** | 32+ character key for API key encryption |
 
 ## 📁 Project Structure
 
@@ -138,12 +142,14 @@ Copy the embed code and paste it before the closing `</body>` tag:
 │   ├── components/
 │   │   └── ChatBubble.tsx     # Chat widget component
 │   ├── lib/
-│   │   └── db.ts              # Database (Vercel KV) layer
+│   │   └── db.ts              # Database (SQLite + Encryption) layer
 │   └── types/
 │       └── chatkit.d.ts       # TypeScript definitions
+├── data/
+│   └── chatkit.db             # SQLite database (auto-created)
 ├── public/
 │   └── embed.js               # Embed script for websites
-└── vercel.json                # Vercel configuration
+└── Dockerfile                 # Docker container setup
 ```
 
 ## 🤝 Contributing
