@@ -116,20 +116,22 @@ export default function ChatBubble({
     const [isMinimized, setIsMinimized] = useState(false);
 
     const apiConfig = {
-        async getClientSecret() {
-            const response = await fetch("/api/token", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ workflowId, siteId }),
-            });
+        api: {
+            getClientSecret: async () => {
+                const response = await fetch("/api/token", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ workflowId, siteId }),
+                });
 
-            if (!response.ok) {
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.error || "Failed to authenticate");
+                }
+
                 const data = await response.json();
-                throw new Error(data.error || "Failed to authenticate");
-            }
-
-            const data = await response.json();
-            return data.client_secret;
+                return data.client_secret;
+            },
         },
     };
 
