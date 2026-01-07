@@ -42,14 +42,7 @@ function ChatBubbleInner({
         }
     }, [isOpen]);
 
-    const { control, error } = useChatKit(apiConfig);
-
-    // Log any ChatKit errors
-    useEffect(() => {
-        if (error) {
-            console.error("ChatKit error:", error);
-        }
-    }, [error]);
+    const { control } = useChatKit(apiConfig);
 
     const positionClass = position === "bottom-left" ? "left-0" : "right-0";
 
